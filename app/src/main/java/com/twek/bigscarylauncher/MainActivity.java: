@@ -1,0 +1,202 @@
+
+package com.twek.bigscarylauncher;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.net.Uri;
+import android.os.Bundle;
+import android.view.Gravity;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
+
+public class MainActivity extends Activity {
+
+    private static final String GAME =
+            "com.axelmatic.bigscary";
+
+    private LinearLayout screen;
+    private TextView status;
+
+    private int dp(int value) {
+        return (int) (value *
+            getResources().getDisplayMetrics().density);
+    }
+
+    @Override
+    protected void onCreate(Bundle state) {
+        super.onCreate(state);
+
+        getWindow().setStatusBarColor(Color.BLACK);
+        getWindow().setNavigationBarColor(Color.BLACK);
+
+        screen = new LinearLayout(this);
+        screen.setOrientation(LinearLayout.VERTICAL);
+        screen.setGravity(Gravity.CENTER);
+        screen.setPadding(dp(24), dp(24), dp(24), dp(24));
+        screen.setBackgroundColor(Color.rgb(8, 8, 10));
+
+        TextView title = new TextView(this);
+        title.setText("BIG\nSCARY");
+        title.setTextColor(Color.rgb(235, 35, 48));
+        title.setTextSize(48);
+        title.setTypeface(Typeface.DEFAULT_BOLD);
+        title.setGravity(Gravity.CENTER);
+
+        screen.addView(title, new LinearLayout.LayoutParams(
+            -1, dp(150)));
+
+        TextView credit = new TextView(this);
+        credit.setText("MODDED BY 2EK");
+        credit.setTextColor(Color.WHITE);
+        credit.setTextSize(18);
+        credit.setTypeface(Typeface.DEFAULT_BOLD);
+        credit.setGravity(Gravity.CENTER);
+
+        screen.addView(credit, new LinearLayout.LayoutParams(
+            -1, dp(55)));
+
+        TextView subtitle = new TextView(this);
+        subtitle.setText("ENTER THE NIGHTMARE");
+        subtitle.setTextColor(Color.GRAY);
+        subtitle.setGravity(Gravity.CENTER);
+
+        screen.addView(subtitle, new LinearLayout.LayoutParams(
+            -1, dp(45)));
+
+        Button play = makeButton(
+            "▶   PLAY BIG SCARY", 0xFFAA1525);
+        play.setOnClickListener(v -> launchGame());
+        screen.addView(play, buttonParams());
+
+        Button install = makeButton(
+            "INSTALL GAME APK", 0xFF29292F);
+        install.setOnClickListener(v -> pickApk());
+        screen.addView(install, buttonParams());
+
+        status = new TextView(this);
+        status.setGravity(Gravity.CENTER);
+        status.setTextSize(13);
+        status.setPadding(0, dp(22), 0, dp(12));
+        screen.addView(status, new LinearLayout.LayoutParams(
+            -1, dp(65)));
+
+        TextView footer = new TextView(this);
+        footer.setText("UNOFFICIAL 2EK LAUNCHER");
+        footer.setTextColor(0xFF66666F);
+        footer.setGravity(Gravity.CENTER);
+        screen.addView(footer);
+
+        setContentView(screen);
+        updateStatus();
+    }
+
+    private LinearLayout.LayoutParams buttonParams() {
+        LinearLayout.LayoutParams p =
+            new LinearLayout.LayoutParams(-1, dp(58));
+        p.setMargins(0, dp(10), 0, dp(10));
+        return p;
+    }
+
+    private Button makeButton(String label, int color) {
+        Button b = new Button(this);
+        b.setText(label);
+        b.setTextColor(Color.WHITE);
+        b.setTextSize(14);
+        b.setTypeface(Typeface.DEFAULT_BOLD);
+        b.setAllCaps(false);
+        b.setBackgroundTintList(
+            android.content.res.ColorStateList.valueOf(color));
+        return b;
+    }
+
+    private boolean installed() {
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= 33) {
+                getPackageManager().getPackageInfo(
+                    GAME,
+                    PackageManager.PackageInfoFlags.of(0));
+            } else {
+                getPackageManager().getPackageInfo(GAME, 0);
+            }
+            return true;
+        } catch (PackageManager.NameNotFoundException e) {
+            return false;
+        }
+    }
+
+    private void updateStatus() {
+        if (installed()) {
+            status.setText("● GAME DETECTED — READY");
+            status.setTextColor(0xFF70E090);
+        } else {
+            status.setText("● GAME NOT INSTALLED");
+            status.setTextColor(0xFFFFB45E);
+        }
+    }
+
+    private void launchGame() {
+        Intent intent =
+            getPackageManager().getLaunchIntentForPackage(GAME);
+
+        if (intent == null) {
+            Toast.makeText(this,
+                "Install Big Scary first!",
+                Toast.LENGTH_LONG).show();
+            updateStatus();
+            return;
+        }
+
+        startActivity(intent);
+    }
+
+    private void pickApk() {
+        Intent intent =
+            new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("application/vnd.android.package-archive");
+        startActivityForResult(intent, 100);
+    }
+
+    @Override
+    protected void onActivityResult(
+        int requestCode, int resultCode, Intent data) {
+
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode != 100 ||
+            resultCode != RESULT_OK ||
+            data == null ||
+            data.getData() == null) {
+            return;
+        }
+
+        Uri apk = data.getData();
+
+        Intent install = new Intent(
+            Intent.ACTION_INSTALL_PACKAGE, apk);
+        install.setDataAndType(
+            apk, "application/vnd.android.package-archive");
+        install.addFlags(
+            Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+        try {
+            startActivity(install);
+        } catch (Exception e) {
+            Toast.makeText(this,
+                "Android could not open the installer.",
+                Toast.LENGTH_LONG).show();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (status != null) updateStatus();
+    }
+}
