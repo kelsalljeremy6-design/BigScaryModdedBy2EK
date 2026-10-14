@@ -1,3 +1,4 @@
+steps:
   - name: Get source code
     uses: actions/checkout@v4
 
@@ -12,16 +13,13 @@
     with:
       gradle-version: '8.9'
 
-        - name: Install Android SDK packages
-        env:
-          ANDROID_HOME: /usr/local/lib/android/sdk
-        run: |
-          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          if [ ! -f "$SDKMANAGER" ]; then
-            SDKMANAGER="$ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager"
-          fi
-          yes | "$SDKMANAGER" --licenses
-          "$SDKMANAGER" --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+  - name: Set up Android SDK
+    uses: android-actions/setup-android@v3
+
+  - name: Install Android SDK packages
+    run: |
+      yes | sdkmanager --licenses
+      sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
   - name: Build APK
     run: gradle --no-daemon assembleDebug
