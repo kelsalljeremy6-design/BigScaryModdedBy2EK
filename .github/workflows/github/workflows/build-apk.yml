@@ -1,3 +1,4 @@
+name: Build Big Scary Modded by 2EK
 steps:
   - name: Get source code
     uses: actions/checkout@v4
